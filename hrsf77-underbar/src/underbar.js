@@ -192,44 +192,42 @@
   //     return total + number * number;
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
-  _.reduce = function(collection, iterator, accumulator) {
-    if (arguments.length !== 3) {
-      var accumulator = collection[0];
-      if (Array.isArray(collection)) {
-        for (var i = 1; i < collection.length; i++) {
-          accumulator = iterator(accumulator, collection[i]); //collection[i] == 1
-        }
-      } else {
-        for (var x in collection) {
-          accumulator = iterator(accumulator, collection[x]);
-          }
-        }
-        // returns a single value from a collection
-        // return the accumulator
-      return accumulator;
-    }
 
-    if (Array.isArray(collection)) {
-     for (var i = 0; i < collection.length; i++) {
-      accumulator = iterator(accumulator, collection[i]); //collection[i] == 1
-     }
-    } else {
-      for (var x in collection) {
-        accumulator = iterator(accumulator, collection[x]);
+
+  /*var callCount = 0;
+var returnFalsy = function(total, item) {
+  callCount++;
+  if (callCount === 1) {
+    return undefined;
+  } else {
+    return item + 1;
+  }
+};
+var total = _.reduce([1,1,2], returnFalsy);
+expect(total).to.equal(3);*/
+
+
+  _.reduce = function(collection, iterator, accumulator) {
+    if (!Array.isArray(collection) && typeof collection === 'object'){
+      for(var keys in collection){
+        accumulator = iterator(accumulator, collection[keys], keys)
       }
     }
-    // returns a single value from a collection
-      // return the accumulator
-   return accumulator;
-  };
-
-  /*var identity = _.reduce([5], function(total, number){
-       return total + number * number;
-     });
-  console.log(identity);*/
+    if (arguments.length === 3) {
+      for (let i = 0; i < collection.length; i++) {
+        accumulator = iterator(accumulator, collection[i]);
+      }
+    } else {
+      accumulator = collection[0]; //[1,1,2]
+      for (let i = 1; i < collection.length; i++) {
+        accumulator = iterator(accumulator, collection[i]);
+      }
+    }
+    return accumulator;
+};
 
   // Determine if the array or object contains a given value (using `===`).
-  _.contains = function(collection, target) {
+  _.contains = function(collection, target) { 
     // TIP: Many iteration problems can be most easily expressed in
     // terms of reduce(). Here's a freebie to demonstrate!
     return _.reduce(collection, function(wasFound, item) {
@@ -241,16 +239,48 @@
   };
 
 
+
+  //expect(_.every([true, true, false])).to.be.false;
+
   // Determine whether all of the elements match a truth test.
-  _.every = function(collection, iterator) {
+  _.every = function(collection, iterator) { //[true, {}, 1] //identity
     // TIP: Try re-using reduce() here.
+    if(arguments.length === 1) {
+      iterator = function(x) {
+        return x;
+      }
+    }
+    return _.reduce(collection, function(notMatch, item) {
+      if(!notMatch) {
+        return false;
+      }
+      if(iterator(item)) {
+        return true;
+      }
+      return false;
+    }, true);   
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
-  _.some = function(collection, iterator) {
-    // TIP: There's a very clever way to re-use every() here.
-  };
+  _.some = function(collection, iterator) { //[1,3,5,6] isEven(1)            //true
+
+    if(arguments.length === 1) {
+      iterator = function(x) {
+        return x;
+      }
+    }
+
+    var isAllFalse = _.every(collection, function(item) { 
+       return !iterator(item); 
+     }); 
+
+    if (isAllFalse === true) { 
+      return false; 
+    } 
+    return true; 
+  }; 
+
 
 
   /**
@@ -265,18 +295,37 @@
   //
   // Example:
   //   var obj1 = {key1: "something"};
-  //   _.extend(obj1, {
-  //     key2: "something new",
-  //     key3: "something else new"
-  //   }, {
-  //     bla: "even more stuff"
-  //   }); // obj1 now contains key1, key2, key3 and bla
+
+  //   _.extend(
+  //     obj1, 
+  //     {
+  //       key2: "something new",
+  //       key3: "something else new"
+  //     }, 
+  //     {
+  //         bla: "even more stuff"
+  //     }
+  //  );              // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    for (var i = 0; i < arguments.length; i++) {
+      for (var key in arguments[i]) {
+        obj[key] = arguments[i][key];
+      }
+    }
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    for (var i = 0; i < arguments.length; i++) {
+      for (var key in arguments[i]) {
+        if(obj[key] == undefined) {
+        obj[key] = arguments[i][key];
+        }
+      }
+    }
+    return obj;
   };
 
 
@@ -294,6 +343,7 @@
     // TIP: These variables are stored in a "closure scope" (worth researching),
     // so that they'll remain available to the newly-generated function every
     // time it's called.
+
     var alreadyCalled = false;
     var result;
 
@@ -320,6 +370,14 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+     var output  = {}; 
+    return function(){
+        var argString = Array.prototype.join.call(arguments,"_");   
+        if (output[argString] === undefined){ 
+            output[argString] = func.apply(output, arguments); 
+        }
+        return output[argString];
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -329,6 +387,10 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    var args = Array.prototype.slice.call(arguments, 2); 
+    setTimeout(function(){
+      func.apply('', args);
+    }, wait);
   };
 
 
@@ -343,7 +405,16 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
-  };
+    var arraycopy = array.slice(); 
+    for (var i = arraycopy.length - 1; i > 0; i--) { //[2,2,6,4] i is 3, while i < 0, i-1
+      console.log("aa")
+      var j = Math.floor(Math.random() * (i + 1)); // 0 ,1, 2, 3
+      var temp = arraycopy[i]; // temp value is 4,6,2,2
+      arraycopy[i] = arraycopy[j]; //index is 2 or 2 or 6 or 4
+      arraycopy[j] = temp; // [4,2,6,2]
+    }
+    return arraycopy;
+};
 
 
   /**

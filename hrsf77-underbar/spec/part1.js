@@ -524,7 +524,6 @@
             return item + 1;
           }
         };
-
         var total = _.reduce([1,1,2], returnFalsy);
         expect(total).to.equal(3);
       });
@@ -542,7 +541,6 @@
         var result = _.reduce([1,2,3], function(memo, item) {
           return memo * item;
         }, 0);
-        console.log("jason 1: " + result);
         expect(result).to.equal(0);
       });
 
@@ -559,7 +557,6 @@
         var result = _.reduce([3,2,1], function(memo, item) {
           return memo - item;
         });
-        console.log("jason 2: " + result);
         expect(result).to.equal(0);
       });
 
